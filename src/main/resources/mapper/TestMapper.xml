@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.blog.mapper.TestMapper">
+    <resultMap id="baseMap" type="com.example.blog.entity.BookDomain">
+        <result property="uuid" column="uuid"/>
+        <result property="bookName" column="name"/>
+        <result property="price" column="price"/>
+        <result property="introduction" column="introduction"/>
+        <result property="url" column="url"/>
+    </resultMap>
+
+    <sql id="cloums">
+        uuid,name,price,introduction,url
+    </sql>
+
+    <insert id="addBook">
+  	  insert into book values (#{uuid},#{bookName},#{price},#{introduction},#{url})
+    </insert>
+
+    <select id="selectBook" parameterType="java.lang.String" resultMap="baseMap">
+        select <include refid="cloums"/>
+        from book
+        where name = #{name}
+    </select>
+
+</mapper>

@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.blog.mapper.UserMapper">
+    <resultMap id="baseMap" type="com.example.blog.vo.PersonalMessageVo">
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="sex" column="sex"/>
+        <result property="major" column="major"/>
+        <result property="age" column="age"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+    </resultMap>
+
+    <resultMap id="userMap" type="com.example.blog.entity.UserInfo">
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="major" column="major"/>
+        <result property="instructorId" column="instructor_id"/>
+    </resultMap>
+
+    <resultMap id="recordMap" type="com.example.blog.vo.RecordVo">
+        <result property="date" column="absence_date"/>
+        <result property="count" column="absence_count"/>
+        <result property="status" column="absence_reason"/>
+    </resultMap>
+
+    <resultMap id="leaveMap" type="com.example.blog.entity.LeaveInfo">
+        <result property="uuid" column="uuid"/>
+        <result property="userId" column="student_id"/>
+        <result property="instructorId" column="instructor_id"/>
+        <result property="userName" column="student_name"/>
+        <result property="major" column="student_major"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="reason" column="reason"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <resultMap id="leaveRecordMap" type="com.example.blog.vo.LeaveRecordVo">
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="reason" column="reason"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <resultMap id="leaveApplyMap" type="com.example.blog.vo.LeaveApplyVo">
+        <result property="userId" column="student_id"/>
+        <result property="userName" column="student_name"/>
+        <result property="major" column="student_major"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="reason" column="reason"/>
+    </resultMap>
+
+    <resultMap id="personLeaveMap" type="com.example.blog.entity.WetherLeave">
+        <result property="userId" column="student_id"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+    </resultMap>
+
+    <resultMap id="leaveTimeMap" type="com.example.blog.entity.LeaveTime">
+        <result property="userId" column="student_id"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+    </resultMap>
+
+    <resultMap id="allUserMap" type="com.example.blog.vo.AllUserInfoVo">
+        <result property="userId" column="user_id"/>
+        <result property="password" column="password"/>
+        <result property="userName" column="user_name"/>
+        <result property="sex" column="sex"/>
+        <result property="age" column="age"/>
+        <result property="major" column="major"/>
+        <result property="phone" column="phone"/>
+        <result property="email" column="email"/>
+    </resultMap>
+
+    <!-- 根据学号来查询个人信息简介 -->
+    <select id="getUserInfo" resultMap="baseMap">
+  	  select user_id,user_name,sex,major,age,phone,email from at_center where user_id=#{userId}
+    </select>
+
+    <!-- 根据学号查询学生信息 -->
+    <select id="getStudentInfo" resultMap="userMap">
+  	  select user_id,user_name,major,instructor_id from at_user where user_id=#{userId}
+    </select>
+
+    <!-- 查询学生自己的考勤信息 -->
+    <select id="getRecord" parameterType="java.lang.String" resultMap="recordMap">
+        select absence_date,absence_count,absence_reason from at_record where user_id = #{userId} order by absence_date DESC
+    </select>
+
+    <!-- 添加学生考勤异常信息 -->
+    <insert id="addAttendErrorInfo" parameterType="com.example.blog.entity.AbsenceRecord">
+        insert into at_record values(#{uuid},#{userId},#{userName},#{major},#{absenceDate},#{absenceReason},#{absenceCount})
+    </insert>
+
+    <!-- 添加学生请假申请信息 -->
+    <insert id="addLeaveInfo" parameterType="com.example.blog.entity.LeaveInfo">
+        insert into at_leave values(#{uuid},#{userId},#{instructorId},#{userName},#{major},#{startTime},#{endTime},#{reason},#{status})
+    </insert>
+
+    <!-- 通过学号查询自己的请假申请记录 -->
+    <select id="getLeaveRecord" parameterType="java.lang.String" resultMap="leaveRecordMap">
+        select start_time,end_time,reason,status from at_leave where student_id = #{userId} order by start_time DESC
+    </select>
+
+    <!-- 老师查询自己管理学生的请假申请记录 -->
+    <select id="getApplyRecord" parameterType="java.lang.String" resultMap="leaveApplyMap">
+        select uuid,user_id,user_name,major,start_time,end_time,reason from at_leave
+        where instructor_id = #{userId} and status = 0 order by start_time DESC
+    </select>
+
+    <!-- 同意请假申请 -->
+    <update id="agreeApply" parameterType="java.lang.String">
+        update at_leave set status = 1 where uuid = #{uuid}
+    </update>
+
+    <!-- 拒绝请假申请 -->
+    <update id="refuseApply" parameterType="java.lang.String">
+        update at_leave set status = 2 where uuid = #{uuid}
+    </update>
+
+    <!-- 通过uuid查询请假表的学号，请假开始、结束时间 -->
+    <select id="getPersonLeaveInfo" parameterType="java.lang.String" resultMap="personLeaveMap">
+        select student_id,start_time,end_time from at_leave where uuid = #{uuid}
+    </select>
+
+    <!-- 通过学号及请假时间检验缺席表是否有缺席记录 -->
+    <select id="getPersonAbsenceInfo" parameterType="com.example.blog.entity.LeaveTime" resultType="java.lang.String">
+        select uuid from at_record where user_id = #{userId} and absence_date = #{startTime} or absence_date = #{endTime}
+    </select>
+
+    <!-- 通过uuid修改学生的缺席状态 -->
+    <update id="updateRecord" parameterType="java.lang.String">
+        update at_record set absence_reason = 1 where uuid = #{uuid}
+    </update>
+
+    <!-- 根据学号和日期查询请假表是否有请假记录 -->
+    <select id="selectCountInfo" parameterType="com.example.blog.entity.IdAndDate" resultType="java.lang.Integer">
+        select count(uuid) from at_leave where student_id = #{userId} and start_time = #{date} or end_time = #{date}
+    </select>
+
+    <!-- 查询所有的系统用户信息 -->
+    <select id="selectAllUserInfo" resultMap="allUserMap">
+        SELECT ac.user_id,ac.user_name,au.password,ac.major,ac.sex,ac.age,ac.phone,ac.email from at_user au INNER JOIN at_center ac ON ac.user_id = au.user_id
+        where au.identity = 0 or au.identity = 1
+    </select>
+
+    <!-- 根据学号查询用户信息 -->
+    <select id="selectUserInfo" parameterType="java.lang.String" resultMap="allUserMap">
+        SELECT ac.user_id,ac.user_name,au.password,ac.major,ac.sex,ac.age,ac.phone,ac.email from at_user au INNER JOIN at_center ac ON ac.user_id = au.user_id
+        where ac.user_id = #{userId}
+    </select>
+
+    <!-- 添加User信息入库 -->
+    <insert id="addUser" parameterType="com.example.blog.entity.User">
+        insert into at_user values (#{userId},#{userName},#{password},#{major},#{instructorId},#{role})
+    </insert>
+
+    <!-- 添加Center信息入库 -->
+    <insert id="addCenter" parameterType="com.example.blog.entity.Center">
+        insert into at_center values (#{userId},#{userName},#{sex},#{major},#{age},#{phone},#{email})
+    </insert>
+
+    <!-- 根据userId删除User表信息 -->
+    <delete id="deleteUser" parameterType="java.lang.String">
+        delete from at_user where user_id = #{userId}
+    </delete>
+
+    <!-- 根据userId删除Center表信息 -->
+    <delete id="deleteCenter" parameterType="java.lang.String">
+        delete from at_center where user_id = #{userId}
+    </delete>
+
+    <!-- 修改User表信息 -->
+    <update id="updateUser" parameterType="com.example.blog.entity.User">
+        update at_user set
+        user_name = #{userName},
+        password = #{password},
+        major = #{major}
+        where user_id = #{userId}
+    </update>
+
+    <!-- 修改User表信息 -->
+    <update id="updateCenter" parameterType="com.example.blog.entity.Center">
+        update at_center set
+        user_name = #{userName},
+        sex = #{sex},
+        major = #{major},
+        age = #{age},
+        phone = #{phone},
+        email = #{email}
+        where user_id = #{userId}
+    </update>
+
+    <!-- 修改User表信息 -->
+    <update id="editTest">
+        update at_user set
+        major = 'Test'
+        where user_id = '2015263040001'
+    </update>
+</mapper>
